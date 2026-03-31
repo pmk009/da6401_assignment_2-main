@@ -10,8 +10,21 @@ class CustomDropout(nn.Module):
     """
 
     def __init__(self, p: float = 0.5):
-        pass
+        
+        if not 0<=p<=1:
+            ValueError("p is not a valid probability.")
+
+        self.dropout_prob = p
+        self.keep_prob = 1-p
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: implement dropout.
-        raise NotImplementedError("Implement CustomDropout.forward")
+        
+        if self.dropout_prob == 0. or not nn.Module.training:
+
+            return x
+        
+        else:
+
+            mask = (torch.rand(x.shape, device=x.device) < self.keep_prob).float
+
+            return mask * x / self.keep_prob
