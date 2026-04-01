@@ -8,37 +8,50 @@ import torch.nn as nn
 
 
 class VGG11Encoder(nn.Module):
-    """VGG11-style encoder with optional intermediate feature returns.
-    """
-
     def __init__(self, in_channels: int = 3):
+        super(VGG11Encoder, self).__init__()
         
         self.conv_1 = nn.Sequential(
-            nn.Conv2d(in_channels, 64, 3, 1, 1),
-            
+            nn.Conv2d(in_channels, 64, 3, 1, 1), 
+            nn.BatchNorm2d(64), 
+            nn.ReLU()
         )
 
         self.conv_2 = nn.Sequential(
             nn.MaxPool2d(2, 2),
-            nn.Conv2d(64, 128, 3, 1, 1)
+            nn.Conv2d(64, 128, 3, 1, 1), 
+            nn.BatchNorm2d(128), 
+            nn.ReLU()
         )
 
         self.conv_3 = nn.Sequential(
             nn.MaxPool2d(2, 2),
-            nn.Conv2d(128, 256, 3, 1, 1),
-            nn.Conv2d(256, 256, 3, 1, 1)
+            nn.Conv2d(128, 256, 3, 1, 1), 
+            nn.BatchNorm2d(256), 
+            nn.ReLU(),
+            nn.Conv2d(256, 256, 3, 1, 1), 
+            nn.BatchNorm2d(256), 
+            nn.ReLU()
         )
 
         self.conv_4 = nn.Sequential(
             nn.MaxPool2d(2, 2),
-            nn.Conv2d(256, 512, 3, 1, 1),
-            nn.Conv2d(512, 512, 3, 1, 1)
+            nn.Conv2d(256, 512, 3, 1, 1), 
+            nn.BatchNorm2d(512), 
+            nn.ReLU(),
+            nn.Conv2d(512, 512, 3, 1, 1), 
+            nn.BatchNorm2d(512), 
+            nn.ReLU()
         )
 
         self.conv_5 = nn.Sequential(
             nn.MaxPool2d(2, 2),
-            nn.Conv2d(512, 512, 3, 1, 1),
-            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.Conv2d(512, 512, 3, 1, 1), 
+            nn.BatchNorm2d(512), 
+            nn.ReLU(),
+            nn.Conv2d(512, 512, 3, 1, 1), 
+            nn.BatchNorm2d(512), 
+            nn.ReLU(),
             nn.MaxPool2d(2, 2)
         )
 
@@ -69,6 +82,6 @@ class VGG11Encoder(nn.Module):
         
         else:
         
-            return 
+            return x5
         
 

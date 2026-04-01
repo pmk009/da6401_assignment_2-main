@@ -45,13 +45,13 @@ class OxfordIIITPetDataset_classify(Dataset):
         
         self.data = []
         self.transform = transform
-        self.one_hot = np.eye(37)
+        self.one_hot = np.eye(37, dtype=np.float32)
 
         for d in data:
 
             name,c_id,sp,brd = d.split(' ')
             class_id = int(c_id)-1
-            img_path = os.path.join('images', name+'.jpg')
+            img_path = os.path.join('data/images', name+'.jpg')
             
             self.data.append((img_path, class_id))
     
@@ -59,13 +59,13 @@ class OxfordIIITPetDataset_classify(Dataset):
         return len(self.data)
     
     def __getitem__(self, idx):
-
-        img_path,class_id = self.data[idx]
+        img_path, class_id = self.data[idx]
         img = Image.open(img_path).convert('RGB')
 
-        if self.transform!=None:
+        if self.transform != None:
             img = self.transform(img)
+            
+        img = np.array(img.resize((224,224), resample=Image.LANCZOS)) / 255.0
+        img = np.transpose(img, (2, 0, 1))
         
-        img = img.resize((224,224),resample=Image.LANCZOS)
-
-        return np.array(img), self.one_hot[class_id]
+        return img.astype(np.float32), class_id
