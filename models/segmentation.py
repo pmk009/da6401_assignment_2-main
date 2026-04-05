@@ -3,7 +3,7 @@
 import os
 import torch
 import torch.nn as nn
-from vgg11 import VGG11Encoder
+from models.vgg11 import VGG11Encoder
 
 class VGG11UNet(nn.Module):
     """U-Net style segmentation network.
@@ -18,6 +18,8 @@ class VGG11UNet(nn.Module):
             in_channels: Number of input channels.
             dropout_p: Dropout probability for the segmentation head.
         """
+
+        super(VGG11UNet, self).__init__()
         
         self.encoder = VGG11Encoder(in_channels)
 
