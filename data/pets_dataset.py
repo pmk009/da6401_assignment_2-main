@@ -12,29 +12,29 @@ import numpy as np
 import xml.etree.ElementTree as ET
 import random
 
-def Image_transform(img: Image):
-    eps = 0.02
-    translate = 2
+def Image_transform(img):
+    eps = 0.1              # increase
+    translate = 10         # increase
 
     affine_coeffs = (
-        1 + random.uniform(-eps, eps),   
-        random.uniform(-eps, eps),          
-        random.uniform(-translate, translate), 
-        random.uniform(-eps, eps),          
-        1 + random.uniform(-eps, eps),      
-        random.uniform(-translate, translate)  
+        1 + random.uniform(-eps, eps),
+        random.uniform(-eps, eps),
+        random.uniform(-translate, translate),
+        random.uniform(-eps, eps),
+        1 + random.uniform(-eps, eps),
+        random.uniform(-translate, translate)
     )
 
-    t    = AffineTransform(affine_coeffs)
+    t = AffineTransform(affine_coeffs)
     flip = random.random() > 0.5        
 
     e = img if flip else mirror(img)
     e = t.transform(e.size, e)
     e = e.resize((224, 224), Image.LANCZOS)
 
-    e = ImageEnhance.Brightness(e).enhance(random.uniform(0.9, 1.1))
-    e = ImageEnhance.Contrast(e).enhance(random.uniform(0.9, 1.1))
-    e = ImageEnhance.Color(e).enhance(random.uniform(0.9, 1.1))
+    e = ImageEnhance.Brightness(e).enhance(random.uniform(0.7, 1.3))
+    e = ImageEnhance.Contrast(e).enhance(random.uniform(0.7, 1.3))
+    e = ImageEnhance.Color(e).enhance(random.uniform(0.7, 1.3))
 
     return e, t, flip 
 
