@@ -30,13 +30,23 @@ def Image_transform(img):
 
     e = img if flip else mirror(img)
     e = t.transform(e.size, e)
-    e = e.resize((224, 224), Image.LANCZOS)
-
     e = ImageEnhance.Brightness(e).enhance(random.uniform(0.7, 1.3))
     e = ImageEnhance.Contrast(e).enhance(random.uniform(0.7, 1.3))
     e = ImageEnhance.Color(e).enhance(random.uniform(0.7, 1.3))
 
     return e, t, flip 
+
+def preprocess_img(img):
+
+    img = img.resize((224,224), Image.LANCZOS)
+    img = np.array(img)/255.
+
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+
+    img = (img - mean) / std
+    img = np.transpose(img, (2,0,1))
+    return img.astype(np.float32)
 
 
 class OxfordIIITPetDataset_classify(Dataset):
@@ -64,11 +74,10 @@ class OxfordIIITPetDataset_classify(Dataset):
 
         if self.transform != None:
             img,_,_ = self.transform(img)
-            
-        img = np.array(img.resize((224,224), resample=Image.LANCZOS)) / 255.0
-        img = np.transpose(img, (2, 0, 1))
+
+        img = preprocess_img(img)
         
-        return img.astype(np.float32), class_id
+        return img, class_id
     
 
 
@@ -128,7 +137,7 @@ class OxfordIIITPetDataset_localize(Dataset):
             ymin = transformed[1].min()
             xmax = transformed[0].max()
             ymax = transformed[1].max()
-
+        
         sx = 224 / orig_w
         sy = 224 / orig_h
 
@@ -145,9 +154,7 @@ class OxfordIIITPetDataset_localize(Dataset):
         h  =  ymax - ymin
 
         bbox = np.array([xc, yc, w, h], dtype=np.float32)
-
-        img = np.array(img.resize((224, 224), resample=Image.LANCZOS)) / 255.0
-        img = np.transpose(img, (2, 0, 1))
+        img = preprocess_img(img)
 
         return img.astype(np.float32), bbox
     
@@ -188,15 +195,14 @@ class OxfordIIITPetDataset_Segmentation(Dataset):
             trimap = t.transform(trimap.size, trimap, resample=Image.NEAREST)
             trimap = trimap.resize((224, 224), Image.NEAREST)
         else:
-            img    = img.resize((224, 224), Image.LANCZOS)
             trimap = trimap.resize((224, 224), Image.NEAREST)
 
-        img = np.array(img.resize((224, 224), resample=Image.LANCZOS)) / 255.0
-        img = np.transpose(img, (2, 0, 1))
+        img = preprocess_img(img)
         img_tensor = torch.tensor(img)
 
         trimap_tensor = torch.tensor(np.array(trimap), dtype=torch.long) 
-        trimap_tensor = trimap_tensor - 1  
+        trimap_tensor = trimap_tensor - 1 
+        trimap_tensor[trimap_tensor == -1] = 255 
 
         return img_tensor, trimap_tensor
 

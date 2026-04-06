@@ -34,6 +34,7 @@ class VGG11UNet(nn.Module):
         self.decode_3 = self.decoder_block(512, 128)
         self.decode_4 = self.decoder_block(256, 64)
         self.decode_5 = self.decoder_block(128, 32)
+        self.pool = nn.MaxPool2d(2,2)
         self.conv_final = nn.Conv2d(32, 3, kernel_size=1)
     
     def decoder_block(self, in_channels, out_channels):
@@ -56,9 +57,9 @@ class VGG11UNet(nn.Module):
         x5, x1, x2, x3, x4 = self.encoder(x , return_features=True)
 
         d1 = self.decode_1(x5)
-        d2 = self.decode_2(torch.cat((d1,x4), dim=1))
-        d3 = self.decode_3(torch.cat((d2,x3), dim=1))
-        d4 = self.decode_4(torch.cat((d3,x2), dim=1))
-        d5 = self.decode_5(torch.cat((d4,x1), dim=1))
+        d2 = self.decode_2(torch.cat((d1,self.pool(x4)), dim=1))
+        d3 = self.decode_3(torch.cat((d2,self.pool(x3)), dim=1))
+        d4 = self.decode_4(torch.cat((d3,self.pool(x2)), dim=1))
+        d5 = self.decode_5(torch.cat((d4,self.pool(x1)), dim=1))
 
         return self.conv_final(d5)

@@ -174,7 +174,7 @@ def train_epoch_localization(model, loader, optimizer, criterion, device, epoch,
         imgs, bboxes = imgs.to(device), bboxes.to(device).float()
         optimizer.zero_grad()
         preds = model(imgs)
-        loss  = criterion()
+        loss  = criterion(preds,bboxes)
         loss.backward()
         optimizer.step()
 
@@ -200,7 +200,7 @@ def val_epoch_localization(model, loader, criterion, device, iou_fn = IoULoss())
     for imgs, bboxes in loader:
         imgs, bboxes = imgs.to(device), bboxes.to(device).float()
         preds    = model(imgs)
-        loss     = criterion()
+        loss     = criterion(preds, bboxes)
 
         total_loss += loss.item() * imgs.size(0)
         total_iou  += (1.0 - iou_fn(preds, bboxes)).item() * imgs.size(0)
@@ -270,7 +270,7 @@ def train(args):
     model = get_model(args, device)
     wandb.watch(model, log='gradients', log_freq=100)
 
-    optimizer = optim.Adam(
+    optimizer = optim.NAdam(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.lr, weight_decay=args.weight_decay
     )
@@ -278,8 +278,9 @@ def train(args):
         optimizer, mode='min', patience=3, factor=0.5
     )
 
-    ce_loss  = nn.CrossEntropyLoss()
+    classify_loss  = nn.CrossEntropyLoss()
     localize_loss = Localize_loss()
+    segment_loss = nn.CrossEntropyLoss(ignore_index=255)
 
     best_val_loss = float('inf')
     global_step   = 0
@@ -288,8 +289,8 @@ def train(args):
         print(f"\nEpoch {epoch}/{args.epochs}")
 
         if args.task == 'classification':
-            tr_loss, tr_acc, tr_f1, global_step = train_epoch_classification(model, train_loader, optimizer, ce_loss, device, epoch, global_step)
-            vl_loss, vl_acc, vl_f1 = val_epoch_classification(model, val_loader, ce_loss, device)
+            tr_loss, tr_acc, tr_f1, global_step = train_epoch_classification(model, train_loader, optimizer, classify_loss, device, epoch, global_step)
+            vl_loss, vl_acc, vl_f1 = val_epoch_classification(model, val_loader, classify_loss, device)
 
             print(f"  Train Loss: {tr_loss:.4f} | Acc: {tr_acc:.4f} | F1: {tr_f1:.4f}")
             print(f"  Val   Loss: {vl_loss:.4f} | Acc: {vl_acc:.4f} | F1: {vl_f1:.4f}")
@@ -314,8 +315,8 @@ def train(args):
             })
 
         elif args.task == 'segmentation':
-            tr_loss, tr_dice, tr_acc, global_step = train_epoch_segmentation(model, train_loader, optimizer, ce_loss, device, epoch, global_step)
-            vl_loss, vl_dice, vl_acc = val_epoch_segmentation(model, val_loader, ce_loss, device)
+            tr_loss, tr_dice, tr_acc, global_step = train_epoch_segmentation(model, train_loader, optimizer, segment_loss, device, epoch, global_step)
+            vl_loss, vl_dice, vl_acc = val_epoch_segmentation(model, val_loader, segment_loss, device)
 
             print(f"  Train Loss: {tr_loss:.4f} | Dice: {tr_dice:.4f} | Acc: {tr_acc:.4f}")
             print(f"  Val   Loss: {vl_loss:.4f} | Dice: {vl_dice:.4f} | Acc: {vl_acc:.4f}")
@@ -352,7 +353,7 @@ def parse_args():
     p.add_argument('--weight_decay',    type=float, default=1e-4)
     p.add_argument('--dropout_p',       type=float, default=0.5)
     p.add_argument('--num_workers',     type=int,   default=4)
-    p.add_argument('--encoder_init',    type=str,   default='')
+    p.add_argument('--encoder_init',    type=str,   default='checkpoints/best_classification.pth')
     p.add_argument('--freeze_strategy', type=str,   default='full_finetune',
                    choices=['full_freeze', 'partial', 'full_finetune'])
     p.add_argument('--checkpoint_dir',  type=str,   default='checkpoints')
