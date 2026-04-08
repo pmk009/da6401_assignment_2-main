@@ -11,30 +11,48 @@ from PIL.ImageOps import mirror
 import numpy as np
 import xml.etree.ElementTree as ET
 import random
+import albumentations as A
 
-def Image_transform(img):
-    eps = 0.1              # increase
-    translate = 10         # increase
+def Image_transform():
+    return A.Compose([
+            A.Affine(
+                scale=(0.9, 1.1),
+                translate_percent=(-0.05, 0.05),
+                shear=(-5, 5),
+                p=1.0
+            ),
+            A.HorizontalFlip(p=0.5),
+            A.Rotate(limit=10, p=0.5),
 
-    affine_coeffs = (
-        1 + random.uniform(-eps, eps),
-        random.uniform(-eps, eps),
-        random.uniform(-translate, translate),
-        random.uniform(-eps, eps),
-        1 + random.uniform(-eps, eps),
-        random.uniform(-translate, translate)
-    )
+            A.RandomSizedBBoxSafeCrop(224, 224, p=0.4),
 
-    t = AffineTransform(affine_coeffs)
-    flip = random.random() > 0.5        
+            A.OneOf([
+                A.RandomBrightnessContrast(0.08, 0.08),
+                A.HueSaturationValue(5, 8, 5),
+            ], p=0.4),
 
-    e = img if flip else mirror(img)
-    e = t.transform(e.size, e)
-    e = ImageEnhance.Brightness(e).enhance(random.uniform(0.7, 1.3))
-    e = ImageEnhance.Contrast(e).enhance(random.uniform(0.7, 1.3))
-    e = ImageEnhance.Color(e).enhance(random.uniform(0.7, 1.3))
+            A.OneOf([
+                A.GaussianBlur(3),
+                A.MotionBlur(3),
+            ], p=0.2),
 
-    return e, t, flip 
+            A.GaussNoise(
+                std_range=(0.02, 0.05),
+                p=0.1
+            ),
+
+            A.CoarseDropout(
+                num_holes_range=(1, 2),
+                hole_height_range=(8, 16),
+                hole_width_range=(8, 16),
+                p=0.2
+            ),
+        ],
+        bbox_params=A.BboxParams(
+            format='pascal_voc',
+            label_fields=['labels'],
+            min_visibility=0.3
+        ))
 
 def preprocess_img(img):
 
@@ -55,7 +73,7 @@ class OxfordIIITPetDataset_classify(Dataset):
     def __init__(self, data: list=[], transform =None):
         
         self.data = []
-        self.transform = transform
+        self.transform = transform() if transform != None else None
 
         for d in data:
 
@@ -70,12 +88,13 @@ class OxfordIIITPetDataset_classify(Dataset):
     
     def __getitem__(self, idx):
         img_path, class_id = self.data[idx]
-        img = Image.open(img_path).convert('RGB')
+        img = np.array(Image.open(img_path).convert('RGB'))
 
-        if self.transform != None:
-            img,_,_ = self.transform(img)
+        if self.transform is not None:
+            aug = self.transform(image=img, bboxes=[], labels=[])
+            img = aug["image"]
 
-        img = preprocess_img(img)
+        img = preprocess_img(Image.fromarray(img))
         
         return img, class_id
     
@@ -85,7 +104,7 @@ class OxfordIIITPetDataset_localize(Dataset):
 
     def __init__(self, data: list = [], transform=None):
         self.data = []
-        self.transform = transform
+        self.transform = transform() if transform != None else None
 
         for d in data:
             name, c_id, sp, brd = d.split(' ')
@@ -110,51 +129,40 @@ class OxfordIIITPetDataset_localize(Dataset):
 
     def __getitem__(self, idx):
         img_path, (xmin, ymin, xmax, ymax) = self.data[idx]
-        img = Image.open(img_path).convert('RGB')
-
-        orig_w, orig_h = img.size     
+        img = np.array(Image.open(img_path).convert('RGB'))
 
         if self.transform is not None:
-            img, t, flip = self.transform(img)
+            aug = self.transform(
+                image=img,
+                bboxes=[[xmin, ymin, xmax, ymax]],
+                labels=[0]
+            )
+            img = aug["image"]
+            xmin, ymin, xmax, ymax = aug["bboxes"][0]
 
-            if not flip:
-                xmin, xmax = orig_w - xmax, orig_w - xmin 
+        h, w = img.shape[:2]
 
-            a, b, tx, c, d, ty = t.data
-            M = np.array([
-                [a, b, tx],
-                [c, d, ty]
-            ])
-            corners = np.array([
-                [xmin, ymin, 1],
-                [xmax, ymin, 1],
-                [xmin, ymax, 1],
-                [xmax, ymax, 1],
-            ]).T
+        sx = 224 / w
+        sy = 224 / h
 
-            transformed = M @ corners
-            xmin = transformed[0].min()
-            ymin = transformed[1].min()
-            xmax = transformed[0].max()
-            ymax = transformed[1].max()
-        
-        sx = 224 / orig_w
-        sy = 224 / orig_h
+        xmin *= sx
+        xmax *= sx
+        ymin *= sy
+        ymax *= sy
 
-        xmin, ymin, xmax, ymax = (
-            float(np.clip(xmin * sx, 0, 224)),
-            float(np.clip(ymin * sy, 0, 224)),
-            float(np.clip(xmax * sx, 0, 224)),
-            float(np.clip(ymax * sy, 0, 224)),
-        )
+        xmin = np.clip(xmin, 0, 224)
+        xmax = np.clip(xmax, 0, 224)
+        ymin = np.clip(ymin, 0, 224)
+        ymax = np.clip(ymax, 0, 224)
 
         xc = (xmin + xmax) / 2
         yc = (ymin + ymax) / 2
-        w  =  xmax - xmin
-        h  =  ymax - ymin
+        w  = xmax - xmin
+        h  = ymax - ymin
 
         bbox = np.array([xc, yc, w, h], dtype=np.float32)
-        img = preprocess_img(img)
+
+        img = preprocess_img(Image.fromarray(img))
 
         return img.astype(np.float32), bbox
     
@@ -167,7 +175,7 @@ class OxfordIIITPetDataset_Segmentation(Dataset):
     def __init__(self, data: list=[], transform =None):
         
         self.data = []
-        self.transform = transform
+        self.transform = transform() if transform != None else None
 
         for d in data:
 
@@ -185,19 +193,22 @@ class OxfordIIITPetDataset_Segmentation(Dataset):
     
     def __getitem__(self, idx):
         img_path, seg_path = self.data[idx]
-        img   = Image.open(img_path).convert('RGB')
-        trimap = Image.open(seg_path).convert('L')
+        img = np.array(Image.open(img_path).convert('RGB'))
+        trimap = np.array(Image.open(seg_path).convert('L'))
 
         if self.transform:
-            img, t, flip = Image_transform(img)
+            aug = self.transform(
+                image=img,
+                mask=trimap,
+                bboxes=[],
+                labels=[]
+            )
+            img = aug["image"]
+            trimap = aug["mask"]
 
-            trimap = trimap if flip else mirror(trimap)
-            trimap = t.transform(trimap.size, trimap, resample=Image.NEAREST)
-            trimap = trimap.resize((224, 224), Image.NEAREST)
-        else:
-            trimap = trimap.resize((224, 224), Image.NEAREST)
+        trimap = Image.fromarray(trimap).resize((224, 224), Image.NEAREST)
 
-        img = preprocess_img(img)
+        img = preprocess_img(Image.fromarray(img))
         img_tensor = torch.tensor(img)
 
         trimap_tensor = torch.tensor(np.array(trimap), dtype=torch.long) 

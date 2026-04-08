@@ -270,7 +270,7 @@ def train(args):
     model = get_model(args, device)
     wandb.watch(model, log='gradients', log_freq=100)
 
-    optimizer = optim.NAdam(
+    optimizer = optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.lr, weight_decay=args.weight_decay
     )
@@ -345,7 +345,7 @@ def parse_args():
 
     p.add_argument('--task', type=str, required=True,
                    choices=['classification', 'localization', 'segmentation'])
-    p.add_argument('--ann_file',        type=str,   default='data/annotations/list.txt')
+    p.add_argument('--ann_file',        type=str,   default='data/annotations/trainval.txt')
     p.add_argument('--val_split',       type=float, default=0.2)
     p.add_argument('--epochs',          type=int,   default=50)
     p.add_argument('--batch_size',      type=int,   default=24)
