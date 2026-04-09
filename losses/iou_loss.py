@@ -35,9 +35,9 @@ class IoULoss(nn.Module):
         Xb = torch.min(torch.concat((xa+wa/2, xb+wb/2), dim=1), dim=1, keepdim=True).values
         Yb = torch.min(torch.concat((ya+ha/2, yb+hb/2), dim=1), dim=1, keepdim=True).values
 
-        h_intersection = (Xb-Xa); h_intersection = h_intersection.masked_fill(h_intersection<0, 0.)
+        w_intersection = (Xb-Xa); w_intersection = w_intersection.masked_fill(w_intersection<0, 0.)
 
-        w_intersection = (Yb-Ya); w_intersection = w_intersection.masked_fill(w_intersection<0, 0.)
+        h_intersection = (Yb-Ya); h_intersection = h_intersection.masked_fill(h_intersection<0, 0.)
 
         Area_intersection = h_intersection * w_intersection
 
@@ -64,4 +64,4 @@ class Localize_loss(nn.Module):
 
     def forward(self, pred, target):
 
-        return self.iouw*self.iou.forward(pred,target) + (1-self.iouw)*self.mse.forward(pred,target)/224**2
+        return self.iouw*self.iou.forward(pred,target) + (1-self.iouw)*self.mse.forward(pred,target)

@@ -13,7 +13,50 @@ import xml.etree.ElementTree as ET
 import random
 import albumentations as A
 
-def Image_transform():
+def Image_transform_classify():
+    return A.Compose([
+        # Geometry
+        A.RandomResizedCrop(
+            (224,224),
+            scale=(0.7, 1.0),
+            p=1.0
+        ),
+        A.HorizontalFlip(p=0.5),
+        A.Affine(
+            scale=(0.9, 1.1),
+            translate_percent=(-0.05, 0.05),
+            shear=(-5, 5),
+            p=0.4         
+        ),
+        A.Rotate(limit=15, p=0.4),
+
+        A.ColorJitter(
+            brightness=0.2,
+            contrast=0.2,
+            saturation=0.3,
+            hue=0.05,        
+            p=0.6
+        ),    
+
+        A.OneOf([
+            A.GaussianBlur(blur_limit=3),
+            A.MotionBlur(blur_limit=3),
+        ], p=0.2),
+
+        A.CoarseDropout(
+            num_holes_range=(1, 3),
+            hole_height_range=(16, 32),
+            hole_width_range=(16, 32),
+            p=0.3
+        )
+    ],bbox_params=A.BboxParams(
+            format='pascal_voc',
+            label_fields=['labels'],
+            min_visibility=0.3
+        ))
+
+
+def Image_transform_localize():
     return A.Compose([
             A.Affine(
                 scale=(0.9, 1.1),
@@ -217,4 +260,91 @@ class OxfordIIITPetDataset_Segmentation(Dataset):
 
         return img_tensor, trimap_tensor
 
-        
+
+class OxfordIIITPetDataset_MultiTask(Dataset):
+    """Oxford-IIIT Pet multi-task dataset: classification + localization + segmentation."""
+
+    def __init__(self, data: list = [], transform=None):
+        self.data = []
+        self.transform = transform() if transform is not None else None
+
+        for d in data:
+            name, c_id, sp, brd = d.split(' ')
+            class_id = int(c_id) - 1
+            img_path = os.path.join('data/images', name + '.jpg')
+
+   
+            bbox = None
+            xml_path = os.path.join('data/annotations/xmls', name + '.xml')
+            if os.path.exists(xml_path):
+                tree = ET.parse(xml_path)
+                root = tree.getroot()
+                obj = root.find('object')
+                bbox = (
+                    int(obj.find('bndbox/xmin').text),
+                    int(obj.find('bndbox/ymin').text),
+                    int(obj.find('bndbox/xmax').text),
+                    int(obj.find('bndbox/ymax').text),
+                )
+
+  
+            seg_path = os.path.join('data/annotations/trimaps', name + '.png')
+            seg_path = seg_path if os.path.exists(seg_path) else None
+
+            self.data.append((img_path, class_id, bbox, seg_path))
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        img_path, class_id, bbox, seg_path = self.data[idx]
+
+        img = np.array(Image.open(img_path).convert('RGB'))
+        trimap = np.array(Image.open(seg_path).convert('L')) if seg_path else None
+        xmin, ymin, xmax, ymax = bbox if bbox else (0, 0, 0, 0)
+
+        if self.transform is not None:
+            aug = self.transform(
+                image=img,
+                mask=trimap if trimap is not None else np.zeros(img.shape[:2], dtype=np.uint8),
+                bboxes=[[xmin, ymin, xmax, ymax]] if bbox else [],
+                labels=[0] if bbox else [],
+            )
+            img = aug["image"]
+            trimap = aug["mask"] if seg_path else None
+            if bbox and aug["bboxes"]:
+                xmin, ymin, xmax, ymax = aug["bboxes"][0]
+
+        bbox_tensor = torch.zeros(4, dtype=torch.float32)
+        if bbox:
+            h, w = img.shape[:2]
+            sx, sy = 224 / w, 224 / h
+            xmin = np.clip(xmin * sx, 0, 224)
+            xmax = np.clip(xmax * sx, 0, 224)
+            ymin = np.clip(ymin * sy, 0, 224)
+            ymax = np.clip(ymax * sy, 0, 224)
+            bbox_tensor = torch.tensor([
+                (xmin + xmax) / 2,
+                (ymin + ymax) / 2,
+                xmax - xmin,
+                ymax - ymin,
+            ], dtype=torch.float32)
+
+        if trimap is not None:
+            trimap = Image.fromarray(trimap).resize((224, 224), Image.NEAREST)
+            trimap_tensor = torch.tensor(np.array(trimap), dtype=torch.long) - 1
+            trimap_tensor[trimap_tensor == -1] = 255
+        else:
+            trimap_tensor = torch.full((224, 224), 255, dtype=torch.long)  
+
+    
+        img_tensor = torch.tensor(preprocess_img(Image.fromarray(img)), dtype=torch.float32)
+
+        return {
+            "image":    img_tensor,       
+            "class_id": class_id,    
+            "bbox":     bbox_tensor,         
+            "mask":     trimap_tensor,       
+            "has_bbox": bbox is not None,     
+            "has_mask": seg_path is not None, 
+        }

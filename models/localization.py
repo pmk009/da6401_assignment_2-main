@@ -3,6 +3,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from models.vgg11 import VGG11Encoder
 from models.layers import CustomDropout
 import os
@@ -27,21 +28,25 @@ class VGG11Localizer(nn.Module):
             print('VGG11 encoder not initialized with Pretrained model.')
 
         self.localize_head = nn.Sequential(
+            nn.Conv2d(512, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.GELU(),
+
+            nn.AdaptiveAvgPool2d((1,1)),
             nn.Flatten(),
-            nn.Linear(7*7*512, 4096), nn.ReLU(), CustomDropout(dropout_p),
-            nn.Linear(4096, 4096), nn.ReLU(), CustomDropout(dropout_p),
-            nn.Linear(4096, 4), nn.ReLU()
+
+            nn.Linear(256, 128),
+            nn.GELU(),
+            CustomDropout(dropout_p),
+
+            nn.Linear(128, 4),
+            nn.ReLU()
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass for localization model.
-        Args:
-            x: Input tensor of shape [B, in_channels, H, W].
 
-        Returns:
-            Bounding box coordinates [B, 4] in (x_center, y_center, width, height) format in original image pixel space(not normalized values).
-        """
-        
         xf = self.encoder(x)
 
-        return self.localize_head(xf)
+        out = self.localize_head(xf)   
+
+        return out

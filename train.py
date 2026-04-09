@@ -13,7 +13,7 @@ from models.classification import VGG11Classifier
 from models.localization   import VGG11Localizer
 from models.segmentation   import VGG11UNet
 
-from data.pets_dataset import OxfordIIITPetDataset_classify, OxfordIIITPetDataset_localize, OxfordIIITPetDataset_Segmentation, Image_transform
+from data.pets_dataset import OxfordIIITPetDataset_classify, OxfordIIITPetDataset_localize, OxfordIIITPetDataset_Segmentation, Image_transform_classify, Image_transform_localize
 
 
 
@@ -60,13 +60,13 @@ def get_dataloaders(args):
     val_l   = lines[:n_val]
 
     if args.task == 'classification':
-        train_ds = OxfordIIITPetDataset_classify(train_l, transform=Image_transform)
+        train_ds = OxfordIIITPetDataset_classify(train_l, transform=Image_transform_classify)
         val_ds   = OxfordIIITPetDataset_classify(val_l)
     elif args.task == 'localization':
-        train_ds = OxfordIIITPetDataset_localize(train_l, transform=Image_transform)
+        train_ds = OxfordIIITPetDataset_localize(train_l, transform=Image_transform_localize)
         val_ds   = OxfordIIITPetDataset_localize(val_l)
     elif args.task == 'segmentation':
-        train_ds = OxfordIIITPetDataset_Segmentation(train_l, transform=Image_transform)
+        train_ds = OxfordIIITPetDataset_Segmentation(train_l, transform=Image_transform_classify)
         val_ds   = OxfordIIITPetDataset_Segmentation(val_l)
     else:
         raise ValueError(f"Unknown task: {args.task}")
@@ -94,8 +94,21 @@ def get_model(args, device):
 
     elif args.task == 'localization':
         model = VGG11Localizer(dropout_p=args.dropout_p)
+        # model.load_state_dict(torch.load(args.encoder_init))
         if args.encoder_init and os.path.exists(args.encoder_init):
             load_encoder_weights(model, args.encoder_init, device)
+        if args.freeze_strategy == 'full_freeze':
+            for p in model.encoder.parameters():
+                p.requires_grad = False
+            print("Encoder fully frozen.")
+
+        elif args.freeze_strategy == 'partial':
+            for name, p in model.encoder.named_parameters():
+                p.requires_grad = any(b in name for b in ['block4', 'block5'])
+            print("Encoder partially frozen (block4, block5 trainable).")
+
+        else:
+            print("Full fine-tuning.")
 
     elif args.task == 'segmentation':
         model = VGG11UNet(num_classes=3, dropout_p=args.dropout_p)
@@ -346,7 +359,7 @@ def parse_args():
     p.add_argument('--task', type=str, required=True,
                    choices=['classification', 'localization', 'segmentation'])
     p.add_argument('--ann_file',        type=str,   default='data/annotations/trainval.txt')
-    p.add_argument('--val_split',       type=float, default=0.2)
+    p.add_argument('--val_split',       type=float, default=0.1)
     p.add_argument('--epochs',          type=int,   default=50)
     p.add_argument('--batch_size',      type=int,   default=24)
     p.add_argument('--lr',              type=float, default=1e-4)

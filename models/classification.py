@@ -13,11 +13,16 @@ class VGG11Classifier(nn.Module):
 
         super(VGG11Classifier, self).__init__()      
         self.encoder = VGG11Encoder(in_channels)
+        self.adaptivepool = nn.AdaptiveAvgPool2d((1,1))
+        self.maxpool = nn.AdaptiveMaxPool2d((1,1))
         self.classify = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(1024, 512), nn.BatchNorm1d(512,), nn.Mish(), CustomDropout(dropout_p),
-            nn.Linear(512, 256), nn.Mish(), CustomDropout(dropout_p),
-            nn.Linear(256, num_classes)
+            CustomDropout(p=0.2),
+            nn.Linear(1024,512),
+            nn.BatchNorm1d(512),
+            nn.GELU(),
+            CustomDropout(dropout_p),
+            nn.Linear(512, num_classes)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -25,8 +30,11 @@ class VGG11Classifier(nn.Module):
         Returns:
             Classification logits [B, num_classes].
         """
-
         xf = self.encoder(x)
-        pred = self.classify(xf)
+
+        xavg = self.adaptivepool(xf)
+        xmax = self.maxpool(xf)
+        xf_ = torch.cat([xavg,xmax], dim=1)
+        pred = self.classify(xf_)
 
         return pred
