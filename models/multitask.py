@@ -26,11 +26,11 @@ class MultiTaskPerceptionModel(nn.Module):
             unet_path: Path to trained unet weights.
         """
         if not os.path.exists(classifier_path):
-            gdown.download(id="https://drive.google.com/file/d/1GqqCQFkkr3dZ_7w7su8rtUsEV1hsvHtO/view?usp=sharing", output=classifier_path, quiet=False)
+            gdown.download(id="1GqqCQFkkr3dZ_7w7su8rtUsEV1hsvHtO", output=classifier_path, quiet=False)
         if not os.path.exists(localizer_path):
-            gdown.download(id="https://drive.google.com/file/d/14DKqE0AVgwRQ7Zp6oMyfcWOR6HSDZUfp/view?usp=sharing", output=localizer_path, quiet=False)
+            gdown.download(id="14DKqE0AVgwRQ7Zp6oMyfcWOR6HSDZUfp", output=localizer_path, quiet=False)
         if not os.path.exists(unet_path):
-            gdown.download(id="https://drive.google.com/file/d/1ICorgugGHQt7VdOqw-5JP1rDYKztCBaR/view?usp=sharing", output=unet_path, quiet=False)
+            gdown.download(id="1ICorgugGHQt7VdOqw-5JP1rDYKztCBaR", output=unet_path, quiet=False)
 
         self.classify = VGG11Classifier()
         pretrained = torch.load(classifier_path)
