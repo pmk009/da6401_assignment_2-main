@@ -55,13 +55,17 @@ class IoULoss(nn.Module):
 
 class Localize_loss(nn.Module):
 
-    def __init__(self,iou_w = 0.8, reduction='mean'):
-        super(Localize_loss, self).__init__()
+    def __init__(self, iou_w=0.8, reduction='mean'):
+        super().__init__()
 
         self.iou = IoULoss(reduction=reduction)
-        self.mse = nn.MSELoss(reduction=reduction)
+        self.reg = nn.SmoothL1Loss(reduction=reduction)
         self.iouw = iou_w
 
     def forward(self, pred, target):
 
-        return self.iouw*self.iou.forward(pred,target) + (1-self.iouw)*self.mse.forward(pred,target)
+        iou_loss = self.iou(pred, target)
+
+        reg_loss = self.reg(pred / 224.0, target / 224.0)
+
+        return self.iouw * iou_loss + (1 - self.iouw) * reg_loss

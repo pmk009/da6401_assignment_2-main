@@ -31,16 +31,16 @@ class VGG11Localizer(nn.Module):
             nn.Conv2d(512, 256, 3, padding=1),
             nn.BatchNorm2d(256),
             nn.GELU(),
-
-            nn.AdaptiveAvgPool2d((1,1)),
+            nn.AdaptiveAvgPool2d((3, 3)),
             nn.Flatten(),
-
-            nn.Linear(256, 128),
+            CustomDropout(0.2),
+            nn.Linear(256*3*3, 1024),
+            nn.BatchNorm1d(1024),
             nn.GELU(),
             CustomDropout(dropout_p),
-
-            nn.Linear(128, 4),
-            nn.ReLU()
+            nn.Linear(1024, 512),
+            nn.GELU(),
+            nn.Linear(512, 4)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -49,4 +49,11 @@ class VGG11Localizer(nn.Module):
 
         out = self.localize_head(xf)   
 
-        return out
+        xy = out[:, :2]                
+        wh = out[:, 2:]                
+
+        wh = F.softplus(wh)            
+
+        bbox = torch.cat([xy, wh], dim=1) 
+
+        return bbox
