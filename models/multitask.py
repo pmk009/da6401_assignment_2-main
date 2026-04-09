@@ -25,6 +25,7 @@ class MultiTaskPerceptionModel(nn.Module):
             localizer_path: Path to trained localizer weights.
             unet_path: Path to trained unet weights.
         """
+        super(MultiTaskPerceptionModel, self).__init__()
         if not os.path.exists(classifier_path):
             gdown.download(id="1GqqCQFkkr3dZ_7w7su8rtUsEV1hsvHtO", output=classifier_path, quiet=False)
         if not os.path.exists(localizer_path):
