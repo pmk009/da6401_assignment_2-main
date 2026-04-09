@@ -48,17 +48,23 @@ class MultiTaskPerceptionModel(nn.Module):
 
     def forward(self, x: torch.Tensor):
         """Forward pass for multi-task model.
+
         Args:
             x: Input tensor of shape [B, in_channels, H, W].
+
         Returns:
-            A dict with keys:
-            - 'classification': [B, num_breeds] logits tensor.
-            - 'localization': [B, 4] bounding box tensor.
-            - 'segmentation': [B, seg_classes, H, W] segmentation logits tensor
+            dict:
+                'classification': Tensor of shape (B, num_classes)
+                'localization'  : Tensor of shape (B, 4)
+                'segmentation'  : Tensor of shape (B, num_seg_classes, H, W)
         """
 
         pet_class = self.classify(x)
         localize = self.localize(x)
         segment = self.segment(x)
 
-        return pet_class, localize, segment
+        return {
+            'classification': pet_class,  
+            'localization': localize,  
+            'segmentation': segment      
+        }
