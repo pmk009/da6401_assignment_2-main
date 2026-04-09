@@ -34,15 +34,15 @@ class MultiTaskPerceptionModel(nn.Module):
             gdown.download(id="1ICorgugGHQt7VdOqw-5JP1rDYKztCBaR", output=unet_path, quiet=False)
 
         self.classify = VGG11Classifier()
-        pretrained = torch.load(classifier_path)
+        pretrained = torch.load(classifier_path, map_location='cpu')
         self.classify.load_state_dict(pretrained)
 
         self.localize = VGG11Localizer()
-        pretrained = torch.load(localizer_path)
+        pretrained = torch.load(localizer_path, map_location='cpu')
         self.localize.load_state_dict(pretrained)
         
         self.segment  = VGG11UNet()
-        pretrained = torch.load(unet_path)
+        pretrained = torch.load(unet_path, map_location='cpu')
         self.segment.load_state_dict(pretrained)
 
 
