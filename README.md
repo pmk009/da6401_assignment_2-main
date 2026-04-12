@@ -70,9 +70,11 @@ Evaluation on external images indicates:
 ```bash
 pip install -r requirements.txt
 python train.py
+```
 
-
+---
 
 ## Acknowledgements
 
-Claude was used as a conceptual aid for structuring the train.py script. All other code was implemented, verified, and adapted independently in accordance with the assignment’s academic integrity guidelines.
+- Claude was used as a conceptual aid for structuring the train.py script  
+- All other code was implemented, verified, and adapted independently in accordance with the assignment’s academic integrity guidelines
