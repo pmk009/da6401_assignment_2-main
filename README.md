@@ -48,23 +48,6 @@ This project implements a multi-task visual perception pipeline using PyTorch on
 
 ---
 
-## Observations
-
-- Classification shows strong generalization performance  
-- Localization exhibits a bias toward discriminative regions (e.g., head) rather than full object extent  
-- Segmentation captures global structure but degrades under complex backgrounds and varying lighting conditions  
-
----
-
-## Generalization to Unseen Data
-
-Evaluation on external images indicates:
-- Classification remains reliable  
-- Bounding boxes are often misaligned or incomplete  
-- Segmentation quality decreases under domain shift  
-
----
-
 ## Usage
 
 ```bash
