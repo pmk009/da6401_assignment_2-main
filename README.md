@@ -82,4 +82,3 @@ cd da6401_assignment_2-main
 ## Acknowledgements
 
 - Claude was used as a conceptual aid for structuring the train.py script  
-- All other code was implemented, verified, and adapted independently in accordance with the assignment’s academic integrity guidelines
