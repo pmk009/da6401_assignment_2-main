@@ -1,7 +1,7 @@
 # DA6401 Assignment 2: Visual Perception Pipeline
 
-**W&B Report:** (https://wandb.ai/DA6401_JM2026/da6401_assignment2/reports/DA6401-Assignment-02--VmlldzoxNjQzMjY3OA?accessToken=csz2ayjgc8xyx4bqaerisfhws1x7zm8il098iwzkr385oxeomrxcs8hyyk9ihq36) 
-**GitHub Repository:** [ADD_LINK_HERE]
+**W&B Report:** [https://wandb.ai/DA6401_JM2026/da6401_assignment2/reports/DA6401-Assignment-02--VmlldzoxNjQzMjY3OA?accessToken=csz2ayjgc8xyx4bqaerisfhws1x7zm8il098iwzkr385oxeomrxcs8hyyk9ihq36]
+**GitHub Repository:** [https://github.com/pmk009/da6401_assignment_2-main]
 
 ---
 
