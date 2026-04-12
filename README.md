@@ -7,7 +7,7 @@
 
 ## Overview
 
-This project implements a multi-task visual perception pipeline using PyTorch on the Oxford-IIIT Pet dataset :contentReference[oaicite:0]{index=0}. The system jointly performs classification, localization, and segmentation within a unified architecture.
+This project implements a multi-task visual perception pipeline using PyTorch on the Oxford-IIIT Pet dataset. The system jointly performs classification, localization, and segmentation within a unified architecture.
 
 ---
 
@@ -70,3 +70,9 @@ Evaluation on external images indicates:
 ```bash
 pip install -r requirements.txt
 python train.py
+
+
+
+## Acknowledgements
+
+Claude was used as a conceptual aid for structuring the train.py script. All other code was implemented, verified, and adapted independently in accordance with the assignment’s academic integrity guidelines.
