@@ -1,61 +1,83 @@
-# DA6401 Assignment 2: Visual Perception Pipeline
+# Assignment 2: Visual Perception Pipeline
 
-**W&B Report:** [https://wandb.ai/DA6401_JM2026/da6401_assignment2/reports/DA6401-Assignment-02--VmlldzoxNjQzMjY3OA?accessToken=csz2ayjgc8xyx4bqaerisfhws1x7zm8il098iwzkr385oxeomrxcs8hyyk9ihq36]
-**GitHub Repository:** [https://github.com/pmk009/da6401_assignment_2-main]
+**Name:** Kishore M  
+**Roll Number:** AE21B036  
+**Course:** DA6401 - Introduction to Deep Learning (Jan-May 2026)
+
+---
+
+## Weights & Biases Report
+
+All experiments, ablations, and evaluations are logged using **Weights & Biases**.
+
+W&B Report:  
+https://wandb.ai/DA6401_JM2026/da6401_assignment2/reports/DA6401-Assignment-02--VmlldzoxNjQzMjY3OA?accessToken=csz2ayjgc8xyx4bqaerisfhws1x7zm8il098iwzkr385oxeomrxcs8hyyk9ihq36
+
+---
+
+## GitHub Repository
+
+Project Repository:  
+https://github.com/pmk009/da6401_assignment_2-main
 
 ---
 
 ## Overview
 
-This project implements a multi-task visual perception pipeline using PyTorch on the Oxford-IIIT Pet dataset. The system jointly performs classification, localization, and segmentation within a unified architecture.
+This project implements a **multi-task visual perception pipeline using PyTorch**.  
+The system integrates classification, localization, and segmentation into a unified architecture based on a shared VGG11 backbone.
+
+The model is trained and evaluated on the **Oxford-IIIT Pet Dataset**.
 
 ---
 
-## Tasks
+## Features
 
-- **Classification:** 37-class pet breed classification using VGG11  
-- **Localization:** Bounding box regression predicting (xc, yc, w, h)  
-- **Segmentation:** U-Net style model for trimap prediction  
-
----
-
-## Architecture
-
-- **Backbone:** VGG11 implemented from scratch  
-- **Multi-task Design:** Shared encoder with task-specific heads:
-  - Classification head (fully connected layers)
-  - Localization head (regression)
-  - Segmentation head (encoder-decoder with skip connections)
+- VGG11 implemented **from scratch in PyTorch**
+- Unified **multi-task learning pipeline**
+- Custom implementation of:
+  - Dropout layer
+  - IoU loss for localization
+- U-Net style segmentation with skip connections
+- Experiment tracking using **Weights & Biases**
 
 ---
 
-## Key Components
+## Implemented Components
 
-- Custom Dropout layer  
-- Custom IoU loss function  
-- Batch Normalization for training stability  
-- Multi-task learning with a shared feature extractor  
+### Classification
+- 37-class pet breed classification  
+- Fully connected classifier head  
+
+### Localization
+- Bounding box regression: *(xc, yc, w, h)*  
+- Custom IoU-based evaluation  
+
+### Segmentation
+- U-Net style encoder-decoder architecture  
+- Pixel-wise trimap prediction  
 
 ---
 
 ## Evaluation Metrics
 
-| Task           | Metric                 |
-|----------------|------------------------|
-| Classification | Macro F1 Score         |
-| Localization   | IoU                    |
-| Segmentation   | Dice Score             |
+| Task           | Metric         |
+|----------------|--------------|
+| Classification | Macro F1 Score |
+| Localization   | IoU           |
+| Segmentation   | Dice Score    |
 
 ---
 
-## Usage
+
+## Installation
+
+Clone the repository:
 
 ```bash
-pip install -r requirements.txt
-python train.py
+git clone https://github.com/pmk009/da6401_assignment_2-main.git
+cd da6401_assignment_2-main
 ```
-
----
 
 ## Acknowledgements
 
